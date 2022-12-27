@@ -24,6 +24,7 @@ namespace UmbDBBURS
 
             if (String.IsNullOrEmpty(parameters))
             {
+                // TODO Update usage description in appsettings.json and use to print manual before exiting
                 return 0;
             }
 
