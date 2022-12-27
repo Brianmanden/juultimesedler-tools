@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-
 using Spectre.Console;
-using System.Collections.Generic;
-using System.Configuration;
 
 namespace UmbDBBURS
 {
@@ -45,7 +42,9 @@ namespace UmbDBBURS
 
                 case "bu":
                     // TODO Backup DB files to folder
-                    AnsiConsole.MarkupLine("Backup DB files");
+                    HelperMethods helpers = new HelperMethods();
+                    string theTime = helpers.GetFormattedTimestamp();
+                    AnsiConsole.MarkupLine("Backup DB files using: " + theTime);
                 break;
 
                 default:
@@ -53,6 +52,14 @@ namespace UmbDBBURS
             }
 
             return 1;
+
+        }
+
+        public class HelperMethods
+        {
+            public string GetFormattedTimestamp() {
+                return DateTime.Now.ToString("yyyy_MM_dd-HH_mm");
+            }
         }
     }
 }
