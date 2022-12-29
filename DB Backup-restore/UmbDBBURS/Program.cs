@@ -7,15 +7,18 @@ namespace UmbDBBURS
     {
         public static int Main(string[] args)
         {
+            #region LOGO
             var logo = new CanvasImage("./Assets/logo.png");
             logo.MaxWidth(32);
             AnsiConsole.Write(logo);
             AnsiConsole.MarkupLine(Environment.NewLine);
+            #endregion
 
+            #region CONFIG
             var configuration = new ConfigurationBuilder()
-                                    .SetBasePath(Directory.GetCurrentDirectory())
-                                    .AddJsonFile("appsettings.json")
-                                    .Build();
+                            .SetBasePath(Directory.GetCurrentDirectory())
+                            .AddJsonFile("appsettings.json")
+                            .Build();
 
             var sourceDir = configuration.GetSection("Source");
             var destRootDir = configuration.GetSection("Destination");
@@ -25,30 +28,46 @@ namespace UmbDBBURS
                         .Select(line => line.Value)
                         .ToArray();
             string parameters = args.Length > 0 ? args[0].ToString().ToLower() : "";
+            #endregion
 
+            #region NO PARAMETERS GIVEN
             if (String.IsNullOrEmpty(parameters))
             {
+                AnsiConsole.MarkupLine("[red]No parameter given[/]");
                 foreach (var line in usage)
                 {
                     AnsiConsole.MarkupLine(line);
                 }
                 return 1;
             }
+            #endregion
 
             switch (parameters)
             {
+                #region RESTORE
                 case "rs":
                     IEnumerable<string> directories = Directory.EnumerateDirectories(destRootDir.Value);
-                    // TODO Restore DB with files
                     string chosenBackup = AnsiConsole.Prompt(
                         new SelectionPrompt<string>()
                         .Title("Chose backup to restore")
                         .PageSize(10)
                         .MoreChoicesText("[grey] Move up/down to chose backup [/]")
                         .AddChoices(directories.ToArray()));
-                    AnsiConsole.MarkupLine("[green] Chosen backup:[/] " + chosenBackup);
-                    break;
 
+                    string[] dbRSFiles = Directory.GetFiles(chosenBackup);
+
+                    foreach (string file in dbRSFiles)
+                    {
+                        string fileName = Path.GetFileName(file);
+                        string destFile = Path.Combine(sourceDir.Value, fileName);
+                        File.Copy(file, destFile, true);
+                    }
+
+                    AnsiConsole.MarkupLine($"[green]{chosenBackup}[/] is restored");
+                    break; 
+                #endregion
+
+                #region BACKUP
                 case "bu":
                     if (Directory.Exists(@sourceDir.Value))
                     {
@@ -56,9 +75,9 @@ namespace UmbDBBURS
                         string formattedTimestamp = helpers.GetFormattedTimestamp();
                         string backupDir = Directory.CreateDirectory(@destRootDir.Value + "\\" + formattedTimestamp).ToString();
 
-                        string[] dbFiles = Directory.GetFiles(@sourceDir.Value);
+                        string[] dbBUFiles = Directory.GetFiles(@sourceDir.Value);
 
-                        foreach (string file in dbFiles)
+                        foreach (string file in dbBUFiles)
                         {
                             // Use static Path methods to extract only the file name from the path.
                             string fileName = Path.GetFileName(file);
@@ -74,9 +93,16 @@ namespace UmbDBBURS
                         AnsiConsole.MarkupLine("Please verify [red]Source[/] in [red]appsettings.json[/]");
                     }
 
-                    break;
+                    break; 
+                #endregion
 
                 default:
+                    AnsiConsole.MarkupLine("[red]No valid parameter given[/]");
+                    foreach (var line in usage)
+                    {
+                        AnsiConsole.MarkupLine(line);
+                    }
+                    return 1;
                     break;
             }
 
