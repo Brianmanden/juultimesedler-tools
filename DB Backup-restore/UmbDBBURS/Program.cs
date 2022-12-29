@@ -7,13 +7,6 @@ namespace UmbDBBURS
     {
         public static int Main(string[] args)
         {
-            #region LOGO
-            var logo = new CanvasImage("./Assets/logo.png");
-            logo.MaxWidth(32);
-            AnsiConsole.Write(logo);
-            AnsiConsole.MarkupLine(Environment.NewLine);
-            #endregion
-
             #region CONFIG
             var configuration = new ConfigurationBuilder()
                             .SetBasePath(Directory.GetCurrentDirectory())
