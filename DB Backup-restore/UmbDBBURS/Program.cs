@@ -7,58 +7,86 @@ namespace UmbDBBURS
     {
         public static int Main(string[] args)
         {
+            var logo = new CanvasImage("./Assets/logo.png");
+            logo.MaxWidth(32);
+            AnsiConsole.Write(logo);
+            AnsiConsole.MarkupLine(Environment.NewLine);
+
             var configuration = new ConfigurationBuilder()
                                     .SetBasePath(Directory.GetCurrentDirectory())
                                     .AddJsonFile("appsettings.json")
                                     .Build();
 
             var sourceDir = configuration.GetSection("Source");
-            var destDir = configuration.GetSection("Destination");
-            var parameters = args.Length > 0 ? args[0].ToString() : "";
-
-            AnsiConsole.MarkupLine($"[red] Source: [/]" + sourceDir.Value);
-            AnsiConsole.MarkupLine($"[yellow] Destination: [/]" + destDir.Value);
-
-            IEnumerable<string> directories = Directory.EnumerateDirectories(destDir.Value);
-            string chosenBackup = "";
+            var destRootDir = configuration.GetSection("Destination");
+            var usage = configuration
+                        .GetSection("Usage")
+                        .GetChildren()
+                        .Select(line => line.Value)
+                        .ToArray();
+            string parameters = args.Length > 0 ? args[0].ToString().ToLower() : "";
 
             if (String.IsNullOrEmpty(parameters))
             {
-                // TODO Update usage description in appsettings.json and use to print manual before exiting
-                return 0;
+                foreach (var line in usage)
+                {
+                    AnsiConsole.MarkupLine(line);
+                }
+                return 1;
             }
 
             switch (parameters)
             {
                 case "rs":
-                    chosenBackup = AnsiConsole.Prompt(
+                    IEnumerable<string> directories = Directory.EnumerateDirectories(destRootDir.Value);
+                    // TODO Restore DB with files
+                    string chosenBackup = AnsiConsole.Prompt(
                         new SelectionPrompt<string>()
                         .Title("Chose backup to restore")
                         .PageSize(10)
                         .MoreChoicesText("[grey] Move up/down to chose backup [/]")
                         .AddChoices(directories.ToArray()));
-                    // TODO Restore DB with files
                     AnsiConsole.MarkupLine("[green] Chosen backup:[/] " + chosenBackup);
-                break;
+                    break;
 
                 case "bu":
-                    // TODO Backup DB files to folder
-                    HelperMethods helpers = new HelperMethods();
-                    string theTime = helpers.GetFormattedTimestamp();
-                    AnsiConsole.MarkupLine("Backup DB files using: " + theTime);
-                break;
+                    if (Directory.Exists(@sourceDir.Value))
+                    {
+                        HelperMethods helpers = new();
+                        string formattedTimestamp = helpers.GetFormattedTimestamp();
+                        string backupDir = Directory.CreateDirectory(@destRootDir.Value + "\\" + formattedTimestamp).ToString();
+
+                        string[] dbFiles = Directory.GetFiles(@sourceDir.Value);
+
+                        foreach (string file in dbFiles)
+                        {
+                            // Use static Path methods to extract only the file name from the path.
+                            string fileName = Path.GetFileName(file);
+                            string destFile = Path.Combine(backupDir, fileName);
+                            File.Copy(file, destFile, true);
+                        }
+
+                        AnsiConsole.MarkupLine($"Database files backed up.");
+                    }
+                    else
+                    {
+                        AnsiConsole.MarkupLine($"The Directory '[red]{sourceDir.Value}[/]' does not exist.");
+                        AnsiConsole.MarkupLine("Please verify [red]Source[/] in [red]appsettings.json[/]");
+                    }
+
+                    break;
 
                 default:
                     break;
             }
 
-            return 1;
-
+            return 0;
         }
 
         public class HelperMethods
         {
-            public string GetFormattedTimestamp() {
+            public string GetFormattedTimestamp()
+            {
                 return DateTime.Now.ToString("yyyy_MM_dd-HH_mm");
             }
         }
